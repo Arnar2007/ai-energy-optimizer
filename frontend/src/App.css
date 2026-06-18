@@ -186,4 +186,13 @@ button.secondary {
   .hero-buttons {
     flex-direction: column;
   }
+}.upload-button {
+  display: inline-block;
+  border: 0;
+  background: #22c55e;
+  color: #052e16;
+  padding: 14px 20px;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
 }
