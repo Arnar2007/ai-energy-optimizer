@@ -1,3 +1,4 @@
+import EnergyScore from "../components/EnergyScore";
 import ChatBox from "../components/ChatBox";
 import { useEffect, useState } from "react";
 import { getStats, uploadEnergyCsv } from "../services/api";
@@ -61,6 +62,12 @@ function Dashboard() {
       </section>
 
       <StatsCards stats={stats} />
+      <section className="mt-6">
+  <EnergyScore
+    score={stats.energy_score}
+    label={stats.energy_label}
+  />
+</section>
 
       <section className="grid">
         <EnergyChart data={stats.daily_usage} />
