@@ -1,3 +1,4 @@
+import ChatBox from "../components/ChatBox";
 import { useEffect, useState } from "react";
 import { getStats, uploadEnergyCsv } from "../services/api";
 import StatsCards from "../components/StatsCards";
@@ -65,6 +66,9 @@ function Dashboard() {
         <EnergyChart data={stats.daily_usage} />
         <AICoach tip={stats.ai_tip} />
       </section>
+      <section className="mt-6">
+  <ChatBox />
+</section>
     </main>
   );
 }
