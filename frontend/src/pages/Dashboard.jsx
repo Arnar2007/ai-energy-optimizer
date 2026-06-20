@@ -1,3 +1,6 @@
+import SavingsCard from "../components/SavingsCard";
+import AIInsights from "../components/AIInsights";
+import ForecastCard from "../components/ForecastCard";
 import EnergyScore from "../components/EnergyScore";
 import ChatBox from "../components/ChatBox";
 import { useEffect, useState } from "react";
@@ -38,45 +41,70 @@ function Dashboard() {
   }
 
   return (
-    <main className="app">
-      <section className="hero">
-        <div>
-          <p className="badge">⚡ VoltWise AI</p>
-          <h1>Your personal AI energy coach.</h1>
-          <p className="subtitle">
-            Understand your electricity usage, predict expensive habits, and
-            discover smarter ways to reduce your bill.
-          </p>
+    <>
+      <main className="app">
+        <section className="hero">
+          <div>
+            <p className="badge">⚡ VoltWise AI</p>
 
-          <div className="hero-buttons">
-            <UploadButton onUpload={handleUpload} uploading={uploading} />
-            <button className="secondary">Ask AI Coach</button>
+            <h1>Your personal AI energy coach.</h1>
+
+            <p className="subtitle">
+              Understand your electricity usage, predict expensive habits, and
+              discover smarter ways to reduce your bill.
+            </p>
+
+            <div className="hero-buttons">
+              <UploadButton onUpload={handleUpload} uploading={uploading} />
+              <button className="secondary">Ask AI Coach</button>
+            </div>
           </div>
-        </div>
 
-        <div className="hero-card">
-          <p>Estimated yearly savings</p>
-          <h2>18,500 ISK</h2>
-          <span>Based on current usage patterns</span>
-        </div>
-      </section>
+          <div className="hero-card">
+            <p>Estimated yearly savings</p>
+            <h2>18,500 ISK</h2>
+            <span>Based on current usage patterns</span>
+          </div>
+        </section>
 
-      <StatsCards stats={stats} />
+        {/* AI Insights */}
+        <section className="mt-8">
+          <AIInsights insights={stats.insights} />
+        </section>
+
+        {/* Stats */}
+        <StatsCards stats={stats} />
+
+        {/* Energy Score + Forecast */}
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          <EnergyScore
+            score={stats.energy_score}
+            label={stats.energy_label}
+          />
+
+          <ForecastCard
+            usage={stats.forecast_usage}
+            bill={stats.forecast_bill}
+            confidence={stats.forecast_confidence}
+            explanation={stats.forecast_explanation}
+          />
+        </section>
+
+        {/* Chart + AI Coach */}
+        <section className="grid">
+          <EnergyChart data={stats.daily_usage} />
+          <AICoach tip={stats.ai_tip} />
+        </section>
+
+        {/* AI Chat */}
+        <section className="mt-6">
+          <ChatBox />
+        </section>
+      </main>
       <section className="mt-6">
-  <EnergyScore
-    score={stats.energy_score}
-    label={stats.energy_label}
-  />
-</section>
-
-      <section className="grid">
-        <EnergyChart data={stats.daily_usage} />
-        <AICoach tip={stats.ai_tip} />
+        <SavingsCard report={stats.savings_report} />
       </section>
-      <section className="mt-6">
-  <ChatBox />
-</section>
-    </main>
+    </>
   );
 }
 

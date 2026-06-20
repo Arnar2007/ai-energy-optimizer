@@ -1,17 +1,35 @@
+from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
+from ai import ask_voltwise, generate_ai_insights, generate_savings_report
+
+
+
+
+
+class ChatRequest(BaseModel):
+    question: str
+
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+
+
 
 def analyze_dataframe(df):
     average = round(df["usage_kwh"].mean(), 2)
@@ -25,23 +43,75 @@ def analyze_dataframe(df):
         "to lower-demand hours to reduce peak energy use."
     )
 
-    return {
+    peak_ratio = max_usage / average if average > 0 else 1
+
+    if peak_ratio < 1.2:
+        energy_score = 95
+        energy_label = "Excellent"
+    elif peak_ratio < 1.4:
+        energy_score = 85
+        energy_label = "Good"
+    elif peak_ratio < 1.7:
+        energy_score = 70
+        energy_label = "Fair"
+    else:
+        energy_score = 55
+        energy_label = "Needs attention"
+
+    forecast_usage = round(average * 30, 2)
+    price_per_kwh = 20
+    forecast_bill = int(forecast_usage * price_per_kwh)
+    forecast_confidence = 82
+
+    forecast_explanation = (
+        f"Based on your average daily usage of {average} kWh, "
+        f"VoltWise estimates next month's usage at {forecast_usage} kWh. "
+        f"At an estimated price of {price_per_kwh} ISK per kWh, "
+        f"your next bill could be around {forecast_bill} ISK."
+    )
+
+    summary = {
         "average_usage": average,
         "max_usage": max_usage,
         "total_usage": total,
         "highest_day": highest_day,
-        "ai_tip": ai_tip,
-        "daily_usage": df.to_dict(orient="records"),
+        "energy_score": energy_score,
+        "energy_label": energy_label,
+        "forecast_usage": forecast_usage,
+        "forecast_bill": forecast_bill,
     }
+
+    insights = generate_ai_insights(summary)
+    savings_report = generate_savings_report(summary)
+
+    return {
+        "average_usage": average,
+        "max_usage": max_usage,
+        "total_usage": total,
+        "energy_score": energy_score,
+        "energy_label": energy_label,
+        "forecast_usage": forecast_usage,
+        "forecast_bill": forecast_bill,
+        "forecast_confidence": forecast_confidence,
+        "forecast_explanation": forecast_explanation,
+        "highest_day": highest_day,
+        "ai_tip": ai_tip,
+        "insights": insights,
+        "daily_usage": df.to_dict(orient="records"),
+        "savings_report": savings_report,
+    }
+
 
 @app.get("/")
 def root():
     return {"message": "VoltWise API is running"}
 
+
 @app.get("/stats")
 def stats():
     df = pd.read_csv("data/usage.csv")
     return analyze_dataframe(df)
+
 
 @app.post("/upload")
 async def upload_csv(file: UploadFile = File(...)):
@@ -52,3 +122,13 @@ async def upload_csv(file: UploadFile = File(...)):
         return {"error": "CSV must contain date and usage_kwh columns"}
 
     return analyze_dataframe(df)
+
+
+@app.post("/chat")
+def chat(request: ChatRequest):
+    df = pd.read_csv("data/usage.csv")
+    energy_summary = df.to_dict(orient="records")
+
+    answer = ask_voltwise(request.question, energy_summary)
+
+    return {"answer": answer}
