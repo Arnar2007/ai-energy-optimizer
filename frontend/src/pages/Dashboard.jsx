@@ -1,3 +1,4 @@
+import { supabase } from "../lib/supabase";
 import SavingsCard from "../components/SavingsCard";
 import AIInsights from "../components/AIInsights";
 import ForecastCard from "../components/ForecastCard";
@@ -39,6 +40,9 @@ function Dashboard() {
   if (!stats) {
     return <div className="loading">Loading VoltWise...</div>;
   }
+  async function handleLogout() {
+    await supabase.auth.signOut();
+  }
 
   return (
     <>
@@ -55,9 +59,12 @@ function Dashboard() {
             </p>
 
             <div className="hero-buttons">
-              <UploadButton onUpload={handleUpload} uploading={uploading} />
-              <button className="secondary">Ask AI Coach</button>
-            </div>
+  <UploadButton onUpload={handleUpload} uploading={uploading} />
+  <button className="secondary">Ask AI Coach</button>
+  <button onClick={handleLogout} className="secondary">
+    Logout
+  </button>
+</div>
           </div>
 
           <div className="hero-card">
