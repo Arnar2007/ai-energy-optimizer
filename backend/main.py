@@ -1,9 +1,12 @@
+from db import get_connection
 from pydantic import BaseModel
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form 
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 from ai import ask_voltwise, generate_ai_insights, generate_savings_report
+import psycopg2
+from psycopg2 import sql
 
 
 
@@ -21,12 +24,13 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:5175",
+        "http://localhost:5178",
+        "http://localhost:5188",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 
 
@@ -113,16 +117,46 @@ def stats():
     return analyze_dataframe(df)
 
 
+
 @app.post("/upload")
-async def upload_csv(file: UploadFile = File(...)):
+async def upload_csv(
+    file: UploadFile = File(...),
+    user_id: str = Form(...)
+):
     contents = await file.read()
     df = pd.read_csv(io.BytesIO(contents))
 
     if "date" not in df.columns or "usage_kwh" not in df.columns:
         return {"error": "CSV must contain date and usage_kwh columns"}
 
-    return analyze_dataframe(df)
+    conn = get_connection()
+    cursor = conn.cursor()
 
+    cursor.execute(
+        """
+        insert into energy_uploads (user_id, filename)
+        values (%s, %s)
+        returning id
+        """,
+        (user_id, file.filename),
+    )
+
+    upload_id = cursor.fetchone()[0]
+
+    for _, row in df.iterrows():
+        cursor.execute(
+            """
+            insert into energy_usage (upload_id, usage_date, usage_kwh)
+            values (%s, %s, %s)
+            """,
+            (upload_id, row["date"], float(row["usage_kwh"])),
+        )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return analyze_dataframe(df)
 
 @app.post("/chat")
 def chat(request: ChatRequest):

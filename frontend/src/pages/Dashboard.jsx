@@ -28,7 +28,10 @@ function Dashboard() {
     setUploading(true);
 
     try {
-      const data = await uploadEnergyCsv(file);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session.user.id;
+        
+        const data = await uploadEnergyCsv(file, userId);
       setStats(data);
     } catch (err) {
       console.error("Upload error:", err);
