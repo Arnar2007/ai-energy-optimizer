@@ -166,3 +166,33 @@ def chat(request: ChatRequest):
     answer = ask_voltwise(request.question, energy_summary)
 
     return {"answer": answer}
+
+
+@app.get("/user-data/{user_id}")
+def get_user_data(user_id: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT usage_date, usage_kwh
+        FROM energy_usage eu
+        JOIN energy_uploads up
+        ON eu.upload_id = up.id
+        WHERE up.user_id = %s
+        ORDER BY usage_date
+        """,
+        (user_id,)
+    )
+
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    if not rows:
+        return {"error": "No data found"}
+
+    df = pd.DataFrame(rows, columns=["date", "usage_kwh"])
+
+    return analyze_dataframe(df)

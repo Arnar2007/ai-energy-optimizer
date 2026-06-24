@@ -17,3 +17,7 @@ export async function uploadEnergyCsv(file, userId) {
   
     return res.json();
   }
+  export async function getUserData(userId) {
+    const res = await fetch(`${API_URL}/user-data/${userId}`);
+    return res.json();
+  }

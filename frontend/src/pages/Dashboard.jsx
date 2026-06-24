@@ -5,7 +5,7 @@ import ForecastCard from "../components/ForecastCard";
 import EnergyScore from "../components/EnergyScore";
 import ChatBox from "../components/ChatBox";
 import { useEffect, useState } from "react";
-import { getStats, uploadEnergyCsv } from "../services/api";
+import { getStats, uploadEnergyCsv, getUserData } from "../services/api";
 import StatsCards from "../components/StatsCards";
 import EnergyChart from "../components/EnergyChart";
 import AICoach from "../components/AICoach";
@@ -16,9 +16,31 @@ function Dashboard() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    getStats()
-      .then((data) => setStats(data))
-      .catch((err) => console.error("Error fetching stats:", err));
+    async function loadUserData() {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user?.id;
+  
+        if (!userId) {
+          const fallback = await getStats();
+          setStats(fallback);
+          return;
+        }
+  
+        const data = await getUserData(userId);
+  
+        if (data.error) {
+          const fallback = await getStats();
+          setStats(fallback);
+        } else {
+          setStats(data);
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    }
+  
+    loadUserData();
   }, []);
 
   async function handleUpload(event) {
