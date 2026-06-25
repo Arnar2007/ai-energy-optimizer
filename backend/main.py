@@ -20,14 +20,8 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5178",
-        "http://localhost:5188",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -182,7 +176,7 @@ def get_user_data(user_id: str):
         WHERE up.user_id = %s
         ORDER BY usage_date
         """,
-        (user_id,)
+        (user_id,),
     )
 
     rows = cursor.fetchall()
@@ -196,3 +190,38 @@ def get_user_data(user_id: str):
     df = pd.DataFrame(rows, columns=["date", "usage_kwh"])
 
     return analyze_dataframe(df)
+
+
+@app.get("/uploads/{user_id}")
+def get_uploads(user_id: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            id,
+            filename,
+            uploaded_at
+        FROM energy_uploads
+        WHERE user_id = %s
+        ORDER BY uploaded_at DESC
+        """,
+        (user_id,),
+    )
+
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    uploads = []
+
+    for row in rows:
+        uploads.append({
+            "id": str(row[0]),
+            "filename": row[1],
+            "uploaded_at": row[2].isoformat()
+        })
+
+    return uploads

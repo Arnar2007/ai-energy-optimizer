@@ -1,3 +1,4 @@
+import UploadHistory from "../components/UploadHistory";
 import { supabase } from "../lib/supabase";
 import SavingsCard from "../components/SavingsCard";
 import AIInsights from "../components/AIInsights";
@@ -5,7 +6,7 @@ import ForecastCard from "../components/ForecastCard";
 import EnergyScore from "../components/EnergyScore";
 import ChatBox from "../components/ChatBox";
 import { useEffect, useState } from "react";
-import { getStats, uploadEnergyCsv, getUserData } from "../services/api";
+import { getStats, uploadEnergyCsv, getUserData, getUploads } from "../services/api";
 import StatsCards from "../components/StatsCards";
 import EnergyChart from "../components/EnergyChart";
 import AICoach from "../components/AICoach";
@@ -14,12 +15,15 @@ import UploadButton from "../components/UploadButton";
 function Dashboard() {
   const [stats, setStats] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploads, setUploads] = useState([]);
 
   useEffect(() => {
     async function loadUserData() {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData.session?.user?.id;
+        const uploadList = await getUploads(userId);
+setUploads(uploadList);
   
         if (!userId) {
           const fallback = await getStats();
@@ -103,6 +107,9 @@ function Dashboard() {
         <section className="mt-8">
           <AIInsights insights={stats.insights} />
         </section>
+        <section className="mt-6">
+  <UploadHistory uploads={uploads} />
+</section>
 
         {/* Stats */}
         <StatsCards stats={stats} />
